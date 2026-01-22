@@ -44,7 +44,7 @@ classdef PROBLEM < handle & matlab.mixin.Heterogeneous
 %--------------------------------------------------------------------------
 
     properties
-        N          = 100;      	% Population size
+        N          = 50;      	% Population size
         maxFE      = 10000;     % Maximum number of function evaluations
         FE         = 0;        	% Number of consumed function evaluations
     end

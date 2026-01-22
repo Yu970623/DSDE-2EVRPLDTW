@@ -21,19 +21,23 @@ classdef DNNSGAII < ALGORITHM
             Population = Problem.Initialization();
             [~,FrontNo,CrowdDis] = EnvironmentalSelection(Population,Problem.N);
             I1 = [];
+            c = [];
             S1 = HV(Population,Problem.optimum);
             I1 = [I1,S1];
-            
+            c = [c, sum(sum(Population.cons))];
             %% Optimization
             while Algorithm.NotTerminated(Population)
                 if mod(Problem.FE,Problem.N)==0
                     S = HV(Population,Problem.optimum);
                     I1 = [I1,S];
+                    c = [c, sum(sum(Population.cons))];
                 end
                 if Problem.FE >= Problem.maxFE-Problem.N
                     problem_name = class(Problem); % 获取类名
-                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\2EVRPLDTW\\Cov\\DNNSGAII_%s_HV.mat', problem_name);
+                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\Test\\2EVRPLDTW-6\\Cov\\DNNSGAII_%s_HV.mat', problem_name);
                     save(fileName1, 'I1', '-V7.3'); % 保存第一个文件
+                    fileName2 = sprintf('F:\\Onedrive\\Experiment\\Test\\2EVRPLDTW-6\\Cov\\DNNSGAII_%s_CV.mat', problem_name);
+                    save(fileName2, 'c', '-V7.3'); % 保存第一个文件
                 end
                 MatingPool = TournamentSelection_Mod(round(Problem.N/2),round(Problem.N/2),Population.decs,FrontNo,-CrowdDis); %收敛最佳的决策空间拥挤解
                 Offspring  = OperatorGA(Problem,Population(MatingPool));

@@ -22,16 +22,12 @@ classdef Ca2_23_15_TW < PROBLEM
         %% Default settings of the problem
         function Setting(obj)
             if isempty(obj.M); obj.M = 2; end
-            if isempty(obj.D); obj.D = 15; end %x_first+x_second
+            if isempty(obj.D); obj.D = 10; end 
             obj.data.algorithm = [];
             obj.lower    = zeros(1,obj.D);
             obj.upper    = ones(1,obj.D);
             obj.encoding = ones(1,obj.D);
 
-            %% 每次运行时都会生成相同的随机数序列
-%             noRng=1;
-%             rng('default')
-%             rng(noRng)
             
             %% 数据定义和读取
             set = 1;  %Ca数据集
@@ -58,8 +54,8 @@ classdef Ca2_23_15_TW < PROBLEM
                 obj.data.start_time = obj.data.Windows(:,1);
                 obj.data.end_time = obj.data.Windows(:,2);
             end
-            obj.data.maxE=500;  %最大电池容量
-            obj.data.maxW=10;    %最大载重重量
+            obj.data.maxE=550;  %最大电池容量
+            obj.data.maxW=5;    %最大载重重量
 
             lb=0;
             ub=1;
@@ -76,8 +72,9 @@ classdef Ca2_23_15_TW < PROBLEM
         
         %% Calculate objective values and constraint violations
         function Population = Evaluation(obj,varargin)
-            PopDec = varargin{1};   %所有个体决策变量集合
-            PopDec = max(min(PopDec,repmat(obj.upper,size(PopDec,1),1)),repmat(obj.lower,size(PopDec,1),1));
+
+            PopDec = varargin{1};
+
             % 非线性动态参数
             obj.data.ratio = (1 + exp(-15 * ((obj.FE / (0.8*obj.maxFE)) - 0.5)));
             y = 0.5 - (0.5 ./ obj.data.ratio);
@@ -88,13 +85,12 @@ classdef Ca2_23_15_TW < PROBLEM
             if obj.FE > 0.8*obj.maxFE
                 y = 0; 
             end
-
+            
                         %% 精英解引导
-            if isequal(obj.data.algorithm,'DSDN') || isequal(obj.data.algorithm,'DSDE')
+            if isequal(obj.data.algorithm,'TEST') || isequal(obj.data.algorithm,'DSDE')
                 %% 时间窗的动态放松（硬时间窗动态软化）
                 obj.data.Windows(:,1)=obj.data.start_time.*(1-y);      %对时间窗进行更新：软时间窗下限 调低
                 obj.data.Windows(:,2)=obj.data.end_time.*(1+y);      %对时间窗进行更新：软时间窗上限 调高
-                
                 % 随机选择行
                 n_method1 = round(length(PopDec(:,1)) * obj.data.eta);
                 idx_rand = randperm(length(PopDec(:,1)));
@@ -110,7 +106,7 @@ classdef Ca2_23_15_TW < PROBLEM
                     diff = obj.data.elite - PopDec(obj.data.idx_method2, :);
                     PopDec(obj.data.idx_method2, :) = PopDec(obj.data.idx_method2, :) + obj.data.beta * abs(diff) .* diff;
                 end
-            
+                
                 % 向量化行级归一化
                 min_vals = min(PopDec, [], 2);
                 max_vals = max(PopDec, [], 2);
@@ -124,35 +120,25 @@ classdef Ca2_23_15_TW < PROBLEM
             PopObj=zeros(N,2);  %目标函数个数2
             PopCon=zeros(N,5);  %约束条件个数5   无人机载重、无人机负载、卡车车辆数、时间窗违反、总约束违反
             route = cell(N,1); 
-            split_point = cell(N,1);
-            operator_num = cell(N,1);
-            for i=1:N
-                if isequal(obj.data.algorithm,'DSDN') || isequal(obj.data.algorithm,'DSDE')
-                    [PopObj(i,1),PopObj(i,2),PopCon(i,1),PopCon(i,2),PopCon(i,3),PopCon(i,4),PopCon(i,5),route{i},split_point{i},operator_num{i}] = aimFcn(PopDec(i,:),obj.option,obj.data,true,[]);%每次传一个解'x' 去计算其对应的目标函数值 PopCon(i,2)第i个解在第2个约束上的违反
-                else
-                    [PopObj(i,1),PopObj(i,2),PopCon(i,1),PopCon(i,2),PopCon(i,3),PopCon(i,4),PopCon(i,5),route{i}] = aimFcn0(PopDec(i,:),obj.option,obj.data);%每次传一个解'x' 去计算其对应的目标函数值 PopCon(i,2)第i个解在第2个约束上的违反
+            if isequal(obj.data.algorithm,'TEST') || isequal(obj.data.algorithm,'DSDE')
+                for i=1:N
+                    [PopObj(i,1),PopObj(i,2),PopCon(i,1),PopCon(i,2),PopCon(i,3),PopCon(i,4),PopCon(i,5),route{i}] = aimFcn6(PopDec(i,:),obj.data);
+                end
+            else
+                for i=1:N
+                    [PopObj(i,1),PopObj(i,2),PopCon(i,1),PopCon(i,2),PopCon(i,3),PopCon(i,4),PopCon(i,5),route{i}] = aimFcn10(PopDec(i,:),obj.data);
                 end
             end
             [~, idx] = min(sum(PopObj, 2));
-            %前80%的解满足约束-->所有满足约束
-            alpha=0.6;
-            for i=1:N
-                for j=1:5
-                    if PopCon(i,j)<=(1-alpha)
-                        PopCon(i,j)=0;
-                    end
-                end
-            end
-            Added = cellfun(@(r, s, o) {r; s; o}, route, split_point, operator_num, 'UniformOutput', false);
-            Population = SOLUTION(PopDec,PopObj,PopCon,Added);
+            
+            Population = SOLUTION(PopDec,PopObj,PopCon,route);
             obj.data.elite = PopDec(idx,:);
             obj.FE     = obj.FE + length(Population);
         end
         
         %% Generate points on the Pareto front
         function R = GetOptimum(obj,N)
-%             R=[500 1460; 600 1370];
-            R=[2000 4000];
+            R=[30 4];
         end
     end
 end

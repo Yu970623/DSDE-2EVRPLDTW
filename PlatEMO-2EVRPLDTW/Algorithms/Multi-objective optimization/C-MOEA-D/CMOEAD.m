@@ -32,18 +32,23 @@ classdef CMOEAD < ALGORITHM
             Population = Problem.Initialization();
             Z = min(Population.objs,[],1);
             I1 = [];
+            c = [];
             S1 = HV(Population,Problem.optimum);
             I1 = [I1,S1];
+            c = [c, sum(sum(Population.cons))];
             %% Optimization
             while Algorithm.NotTerminated(Population)
                 if mod(Problem.FE,Problem.N)==0
                     S = HV(Population,Problem.optimum);
                     I1 = [I1,S];
+                    c = [c, sum(sum(Population.cons))];
                 end
                 if Problem.FE >= Problem.maxFE-Problem.N
                     problem_name = class(Problem); % 获取类名
-                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\2EVRPLDTW\\Cov\\CMOEAD_%s_HV.mat', problem_name);
+                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\Test\\2EVRPLDTW-6\\Cov\\CMOEAD_%s_HV.mat', problem_name);
                     save(fileName1, 'I1', '-V7.3'); % 保存第一个文件
+                    fileName2 = sprintf('F:\\Onedrive\\Experiment\\Test\\2EVRPLDTW-6\\Cov\\CMOEAD_%s_CV.mat', problem_name);
+                    save(fileName2, 'c', '-V7.3'); % 保存第一个文件
                 end
                 % For each solution
                 for i = 1 : Problem.N      

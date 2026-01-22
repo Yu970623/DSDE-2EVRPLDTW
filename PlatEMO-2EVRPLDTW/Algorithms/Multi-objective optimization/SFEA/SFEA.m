@@ -29,20 +29,25 @@ classdef SFEA < ALGORITHM
             %% Optimization
               arch = ArchiveUpdate([Population1,Population2],Problem.N);
             I1 = [];
+            c = [];
             S1 = HV(Population2,Problem.optimum);
             I1 = [I1,S1];
-            
+            c = [c, sum(sum(Population2.cons))];
             %% Optimization
             while Algorithm.NotTerminated(Population2)
                 if mod(Problem.FE,Problem.N)==0
                     S = HV(Population2,Problem.optimum);
                     I1 = [I1,S];
+                    c = [c, sum(sum(Population2.cons))];
                 end
                 if Problem.FE >= Problem.maxFE-Problem.N
-                    problem_name = class(Problem); % 获取类名
                     I1 = [I1,S];
-                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\2EVRPLDTW\\Cov\\SFEA_%s_HV.mat', problem_name);
+                    c = [c, sum(sum(Population2.cons))];
+                    problem_name = class(Problem); % 获取类名
+                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\Test\\2EVRPLDTW-6\\Cov\\SFEA_%s_HV.mat', problem_name);
                     save(fileName1, 'I1', '-V7.3'); % 保存第一个文件
+                    fileName2 = sprintf('F:\\Onedrive\\Experiment\\Test\\2EVRPLDTW-6\\Cov\\SFEA_%s_CV.mat', problem_name);
+                    save(fileName2, 'c', '-V7.3'); % 保存第一个文件
                 end
                 if type == 1
                     MatingPool1 = TournamentSelection(2,Problem.N,Fitness1);

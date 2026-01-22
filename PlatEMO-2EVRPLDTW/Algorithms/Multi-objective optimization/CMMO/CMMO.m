@@ -50,8 +50,8 @@ classdef CMMO < ALGORITHM
                 if Problem.FE >= Problem.maxFE-Problem.N
                     problem_name = class(Problem); % 获取类名
                     I1 = [I1,S];
-                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\2EVRPLDTW\\Cov\\CMMO_%s_HV.mat', problem_name);
-                    save(fileName1, 'I1', '-V7.3'); % 保存第一个文件
+                    % fileName1 = sprintf('F:\\Onedrive\\Experiment\\2EVRPLDTW\\Cov\\CMMO_%s_HV.mat', problem_name);
+                    % save(fileName1, 'I1', '-V7.3'); % 保存第一个文件
                 end       
                 % The value of e(k) and the search strategy are set.
                 if gen < 0.2 * G

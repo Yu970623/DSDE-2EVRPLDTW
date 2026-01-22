@@ -29,41 +29,52 @@ classdef DSDE < ALGORITHM
             sigma = 0;
             [W,Problem.N] = UniformPoint(Problem.N,Problem.M);
             Zmin    = min(Population.objs,[],1);
+            epsilon_0 = max(overall_cv(Population.cons));
+            Tc = 0.8 * ceil(Problem.maxFE/Problem.N);
+            cp = 2;
             I1 = [];
+            c = [];
             S1 = HV(Population,Problem.optimum);
             I1 = [I1,S1];
+            c = [c, sum(sum(Population.cons))];
+            Population_ori = Population;
             %% Optimization
             while Algorithm.NotTerminated(Population)
+                gen = ceil(Problem.FE/Problem.N);
                 if mod(Problem.FE,Problem.N)==0
                     S = HV(Population,Problem.optimum);
                     I1 = [I1,S];
-                end
-                if Problem.FE >= Problem.maxFE-2*Problem.N
-                    problem_name = class(Problem); % 获取类名
-                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\2EVRPLDTW\\Cov\\DSDN_%s_HV.mat', problem_name);
-                    save(fileName1, 'I1', '-V7.3'); % 保存第一个文件
+                    c = [c, sum(sum(Population_ori.cons))];
                 end
                 if Problem.FE >= Problem.maxFE-Problem.N
                     problem_name = class(Problem); % 获取类名
-                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\2EVRPLDTW\\Cov\\DSDN_%s_HV.mat', problem_name);
+                    fileName1 = sprintf('F:\\Onedrive\\Experiment\\Test\\2EVRPLDTW-6\\Cov\\DSDN_%s_HV.mat', problem_name);
                     save(fileName1, 'I1', '-V7.3'); % 保存第一个文件
+                    fileName2 = sprintf('F:\\Onedrive\\Experiment\\Test\\2EVRPLDTW-6\\Cov\\DSDN_%s_CV.mat', problem_name);
+                    save(fileName2, 'c', '-V7.3'); % 保存第一个文件
+                end
+                if Problem.maxFE<=Tc
+                    epsilon = epsilon_0 * ((1 - (gen / Tc)) ^ cp);
+                else
+                    epsilon = 0;
                 end
                 MatingPool = TournamentSelection(2,Problem.N,sum(max(0,Population.cons),2));
                 [Mat1,Mat2] = Neighbor_Sort(Population(MatingPool),Zmin);
                 Offspring = OperatorDE(Problem,Population(MatingPool),Mat1,Mat2,{rand(),rand(),rand(),rand()});
                 Zmin       = min([Zmin;Offspring.objs],[],1);
                 R = (Problem.D^(1/3)) * (1 - exp(-((Problem.FE/Problem.N-mu)^2) / (2 * sigma^2)));
-                epsilon = max(max(Population.cons))*Problem.data.eta*0.5;
-                Population = Update_time(Population,Problem.data,epsilon);
-                Archive = Update_time(Archive,Problem.data,epsilon);
-                [Population,~] = EnvironmentalSelection([Population,Offspring],Problem.N,W,Zmin,R);
+                % epsilon = max(max(Population.cons))*Problem.data.eta*0.5;
+                % Population = Update_time(Population,Problem.data,epsilon);
+                % Archive = Update_time(Archive,Problem.data,epsilon);
+                Population_ori = Population;
+                [Population,~] = EnvironmentalSelection_M(Problem,[Population,Offspring],Problem.N,W,Zmin,R,epsilon);
                 Archive = ArchiveUpdate([Archive,Population,Offspring],Problem.N);
                 mean_P = sum(sum(Population.objs,1))/Problem.N;
-                if mod(Problem.FE/Problem.N,10)==0
+                if mod(Problem.FE/Problem.N,2)==0
                     [ROC_P,P_pre] = Detect(P_pre,mean_P);
                 end
                 PND = Cal_PND(Population); 
-                if (PND > 0.99 && ROC_P<1e-3) && ~isCov
+                if (PND > 0.9 && ROC_P<1e-3) && ~isCov
                     sigma = floor(abs(mu-Problem.FE/Problem.N)/3);
                     isCov = true;
                 end
@@ -71,7 +82,10 @@ classdef DSDE < ALGORITHM
         end
     end
 end
-
+function result = overall_cv(cv)
+    cv(cv <= 0) = 0;cv = abs(cv);
+    result = sum(cv,2);
+end
 function [ROC,pre] = Detect(pre,now)
     ROC = abs((now-pre)/pre);
     pre = now; 
@@ -93,8 +107,8 @@ function [Mat1,Mat2] = Neighbor_Sort(Population,Zmin)
 end
 function Population = Update_time(Population,data,epsilon)
     for i = 1:length(Population)
-        seq_sat = Population(1,i).add{1,1}{1,1}{1,1};
-        route = Population(1,i).add{1,1}{1,1}{2,1};
+        seq_sat = Population(1,i).add{1,1}{1,1};
+        route = Population(1,i).add{1,1}{2,1};
         New_time = time_violate(seq_sat,route,data,data.vrp2e);
         if New_time > epsilon
             Population(1,i).con(5) = Population(1,i).con(5)-Population(1,i).con(4)+New_time;

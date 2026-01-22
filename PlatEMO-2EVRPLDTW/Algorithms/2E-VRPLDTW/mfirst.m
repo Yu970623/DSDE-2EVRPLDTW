@@ -20,9 +20,9 @@ function [equip_cost1,energy_cost1,fvlt1] = mfirst(vrp2e,route,capacity)
     end
     fvlt1  = fvlt1+max(num_fleet-fleet(1,2),0);
     %----计算路径的运输代价---- 
-    equip_cost1 = num_fleet * 199;
+    equip_cost1 = num_fleet * 12.5;
     loc_depot = find(route<=num_dep);
     rback = route; rback(loc_depot(2:end)) = route(loc_depot(1:end-1));
     route2     = [rback(2:end),route(loc_depot(end))];
-    energy_cost1 = sum(dis_ds(route+(route2-1)*nds))*100;
+    energy_cost1 = sum(dis_ds(route+(route2-1)*nds))*0.1286;
 end

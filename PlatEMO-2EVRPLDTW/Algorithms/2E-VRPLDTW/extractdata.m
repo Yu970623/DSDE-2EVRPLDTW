@@ -75,7 +75,8 @@ function [vrp2e,timewindows,timeservice,demand,type,dis_ds,dis_sc,num_dep,num_sa
         case 4
             case_name   = Set4{seq};
     end
-    filename     = ['D:\OneDrive-CSU\OneDrive - csu.edu.cn\2E-VRP\Instance\',case_name,'.csv'];
+    filename     = ['F:\Onedrive\Experiment\Test\2EVRPLDTW-6\Instance\',case_name,'.csv'];
+    % filename     = ['/Users/yufan/Desktop/outside/PlatEMO-VRPLDTW/Instance/',case_name,'.csv']; 
     disp([case_name,' read']);
     
     % 读取CSV文件，指定第一行为表头，并跳过第一行
@@ -182,7 +183,7 @@ vrp2e.num_dep = num_dep;
 vrp2e.num_sat = num_sat;
 vrp2e.num_cus = num_cus;
 vrp2e.case_name = case_name;
-vrp2e.E = 500;
+vrp2e.E = 550;
 vrp2e.V = 10;
 %处理Set4a的特殊车辆约束
 vrp2e.maxFleetPerSat = maxFleetPerSat;%每个卫星容纳的最大二级车辆数
